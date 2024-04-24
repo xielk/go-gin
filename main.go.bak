@@ -1,0 +1,215 @@
+package main
+
+import (
+    "database/sql"
+    "crypto/md5"
+    "encoding/hex"
+    "log"
+    "strings"
+    "time"
+    "sort"
+    "net/http"
+    "gopkg.in/yaml.v2"
+
+    _ "github.com/go-sql-driver/mysql"
+    "github.com/gin-gonic/gin"
+    "github.com/patrickmn/go-cache"
+)
+
+// sgDistributor 结构体用于表示 sg_distributors 表中的一行记录
+type sgDistributor struct {
+    ID        int    `json:"id"`
+    CertID    string `json:"cert_id"`
+    ComName   string `json:"com_name"`
+    ShopName  sql.NullString `json:"shop_name"`
+    ComType   string `json:"com_type"`
+    AuthTime  string `json:"auth_time"`
+    CreateAt  string `json:"create_at"`
+    Type      int    `json:"type"`
+    Status    int    `json:"status"`
+}
+
+type response struct {
+    Code int         `json:"code"`
+    Msg  string      `json:"msg"`
+    Data interface{} `json:"data,omitempty"`
+}
+
+var db *sql.DB // 在main函数之外定义db变量
+var dataCache *cache.Cache
+
+
+func init() {
+    var err error
+    db, err = sql.Open("mysql", "seagate:RDGOsTLe@tcp(123.206.71.32:3306)/seagate")
+    if err != nil {
+        log.Fatal("Error connecting to database:", err)
+    }
+    // defer db.Close()
+
+    dataCache = cache.New(1*time.Minute, 2*time.Minute)
+}
+
+func main() {
+
+    // var err error
+    // db, err = sql.Open("mysql", "seagate:RDGOsTLe@tcp(123.206.71.32:3306)/seagate")
+    // if err != nil {
+    //     log.Fatal("Error connecting to database:", err)
+    // }
+    // defer db.Close()
+
+    router := gin.Default()
+
+    // 添加中间件进行签名验证
+    // router.Use(verifySignatureMiddleware)
+
+    // 中间件：缓存
+    router.Use(cacheMiddleware)
+
+    router.GET("/api/company", getCompanyHandler)
+    router.Handle("OPTIONS", "/api/company", getCompanyHandler)
+
+    router.Run(":4399")
+}
+
+
+
+// verifySignatureMiddleware 中间件用于验证签名
+func verifySignatureMiddleware(c *gin.Context) {
+    // 获取 GET 和 POST 参数
+    getParams := c.Request.URL.Query()
+    postParams := c.Request.PostForm
+
+    // 合并 GET 和 POST 参数
+    params := make(map[string]string)
+    for k, v := range getParams {
+        params[k] = v[0]
+    }
+    for k, v := range postParams {
+        params[k] = v[0]
+    }
+     // 获取请求中的签名
+    receivedSignature := params["signature"]
+    delete(params, "signature")
+    // 计算签名
+    signature := calculateSignature(params, "4297f44b13955235245b2497399d7a93")
+
+
+   
+    log.Println(signature)
+    log.Println(receivedSignature)
+    // 比较签名是否匹配
+    if signature != receivedSignature {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid signature"})
+        c.Abort()
+        return
+    }
+
+    c.Next()
+}
+
+func cacheMiddleware(c *gin.Context) {
+    // 获取请求的 URL 路径和查询参数
+    key := generateMD5Key(c.Request.URL.Path + c.Request.URL.RawQuery)
+
+    // 尝试从缓存中获取数据
+    if cachedData, found := dataCache.Get(key); found {
+        log.Println("Data found in cache:", cachedData)
+        c.Set("cachedData", cachedData)
+        c.Abort() // 终止请求处理，直接返回缓存数据
+        return
+    }
+
+    // 如果缓存中不存在数据，则继续处理请求
+    c.Next()
+
+    // 缓存处理完的数据
+    if cachedData, exists := c.Get("cachedData"); exists {
+        // 在每次请求到达时都更新缓存中的数据
+        dataCache.Set(key, cachedData, cache.DefaultExpiration)
+        log.Println("Data cached:", cachedData)
+    }
+}
+
+// calculateSignature 函数用于计算签名
+func calculateSignature(params map[string]string, secretKey string) string {
+    // 对参数按照 key 进行排序
+    var keys []string
+    for k := range params {
+        keys = append(keys, k)
+    }
+    sort.Strings(keys)
+
+    // 拼接参数和值
+    var sb strings.Builder
+    for _, k := range keys {
+        sb.WriteString(k)
+        sb.WriteString(params[k])
+    }
+    sb.WriteString(secretKey)
+    log.Println(sb.String())
+    // 计算 MD5 哈希值并返回签名
+    hash := md5.New()
+    hash.Write([]byte(sb.String()))
+    return hex.EncodeToString(hash.Sum(nil))
+}
+
+// getCompanyHandler 处理 /api/company 路由的请求
+func getCompanyHandler(c *gin.Context) {
+     keyword := c.Query("keyword")
+        var queryField string
+
+        if isChinese(keyword) {
+            queryField = "com_name"
+        } else {
+            queryField = "cert_id"
+        }
+
+        // 查询数据库
+        rows, err := db.Query("SELECT id, cert_id, com_name, shop_name, com_type, auth_time, create_at, type, status FROM sg_distributors WHERE status =1 and "+queryField+" = ?", keyword)
+        if err != nil {
+            log.Println("Error querying database:", err)
+            c.JSON(http.StatusInternalServerError, response{Code: 1, Msg: "fail"})
+            return
+        }
+        defer rows.Close()
+
+        // 解析查询结果
+        var distributors []sgDistributor
+        for rows.Next() {
+            var distributor sgDistributor
+            err := rows.Scan(&distributor.ID, &distributor.CertID, &distributor.ComName, &distributor.ShopName, &distributor.ComType, &distributor.AuthTime, &distributor.CreateAt, &distributor.Type, &distributor.Status)
+            if err != nil {
+                log.Println("Error scanning rows:", err)
+                c.JSON(http.StatusInternalServerError, response{Code: 1, Msg: "fail"})
+                return
+            }
+            distributors = append(distributors, distributor)
+        }
+
+        if len(distributors) == 0 {
+            c.JSON(http.StatusOK, response{Code: 1, Msg: "fail"})
+            return
+        }
+
+        c.JSON(http.StatusOK, response{Code: 0, Msg: "success", Data: distributors})
+}
+
+// 判断一个字符串是否包含中文字符
+func isChinese(s string) bool {
+    for _, r := range s {
+        if r >= 0x4E00 && r <= 0x9FFF {
+            return true
+        }
+    }
+    return false
+}
+
+// 生成 MD5 值
+func generateMD5Key(s string) string {
+    hash := md5.New()
+    hash.Write([]byte(s))
+    return hex.EncodeToString(hash.Sum(nil))
+}
+

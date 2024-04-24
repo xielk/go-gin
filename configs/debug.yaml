@@ -1,0 +1,14 @@
+# configs/debug.yaml
+
+server:
+  port: 8081
+  debug: true
+database:
+  host: 127.0.0.1
+  port: 3306
+  dbname: ginsk 
+  username: ginsk
+  password: ginsk123
+jwt:
+  key: 123123
+

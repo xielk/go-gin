@@ -1,0 +1,268 @@
+definitions:
+  controllers.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  models.Article:
+    properties:
+      comments:
+        items:
+          $ref: '#/definitions/models.Comment'
+        type: array
+      content:
+        type: string
+      coverImageURL:
+        type: string
+      createdAt:
+        type: string
+      deletedOn:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      stars:
+        items:
+          $ref: '#/definitions/models.Star'
+        type: array
+      status:
+        type: integer
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Comment:
+    properties:
+      articleID:
+        type: integer
+      content:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.CreateArticleInput:
+    properties:
+      content:
+        type: string
+      cover_image_url:
+        type: string
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  models.Star:
+    properties:
+      articleID:
+        type: integer
+      createdAt:
+        type: string
+      id:
+        type: integer
+      updatedAt:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: 定义与 User 模型的关联
+      userID:
+        type: integer
+      username:
+        description: 不映射到数据库，用于存储用户名
+        type: string
+    type: object
+  models.UpdateArticleInput:
+    properties:
+      content:
+        type: string
+      cover_image_url:
+        type: string
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  models.User:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      lastLoginIP:
+        type: string
+      lastLoginTime:
+        type: string
+      loginTimes:
+        type: integer
+      password:
+        type: string
+      phone:
+        type: string
+      realname:
+        type: string
+      remark:
+        type: string
+      status:
+        type: integer
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /articles:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有文章列表，包括评论和星级信息
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Article'
+            type: array
+      summary: 获取所有文章列表，包括评论和星级信息
+      tags:
+      - Articles
+    post:
+      consumes:
+      - application/json
+      description: 创建文章
+      parameters:
+      - description: 文章信息
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateArticleInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Article'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: 创建文章
+      tags:
+      - Articles
+  /articles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除文章
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: 删除文章
+      tags:
+      - Articles
+    get:
+      consumes:
+      - application/json
+      description: 获取单篇文章详情
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Article'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: 获取单篇文章详情
+      tags:
+      - Articles
+    put:
+      consumes:
+      - application/json
+      description: 更新文章
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 文章信息
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateArticleInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Article'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: 更新文章
+      tags:
+      - Articles
+  /test/helloworld:
+    get:
+      consumes:
+      - application/json
+      description: do ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: ping example
+      tags:
+      - example
+swagger: "2.0"
