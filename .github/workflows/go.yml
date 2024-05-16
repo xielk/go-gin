@@ -24,6 +24,8 @@ jobs:
     - name: Build
       run: go build -v -o gak_server 
 
+    - run: ls -lhs #ls file list
+
     - name: copy file via ssh key
       uses: appleboy/scp-action@v0.1.7
       with:
