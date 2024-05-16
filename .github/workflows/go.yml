@@ -29,7 +29,7 @@ jobs:
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
-        port: ${{ secrets.PORT }}
+        port: 22
         key: ${{ secrets.KEY }}
         source: "bin/gak-server"
         target: /tmp/gak-server
@@ -37,7 +37,7 @@ jobs:
     - name: ssh key passphrase
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.SERVER }}
+        host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.KEY }}
         port: 22
