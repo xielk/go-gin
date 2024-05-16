@@ -24,15 +24,7 @@ jobs:
     - name: Build
       run: go build -v -o bin/gak_server 
 
-    - name: copy file via ssh key
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        port: 22
-        key: ${{ secrets.KEY }}
-        source: "bin/gak-server"
-        target: /tmp/gak-server
+    
 
     - name: ssh key passphrase
       uses: appleboy/ssh-action@v1.0.3
