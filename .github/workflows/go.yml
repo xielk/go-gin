@@ -26,25 +26,20 @@ jobs:
 
     - run: ls -lhs #ls file list
 
-    - name: copy file via ssh key
-      uses: appleboy/scp-action@v0.1.7
+    - name: Deploy to Staging server
+      uses: easingthemes/ssh-deploy@main
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        port: 22
-        key: ${{ secrets.KEY }}
-        source: ./bin/gak-server
-        target: /tmp/
-
-    - name: ssh key passphrase
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        port: 22
-        script: |
+        SSH_PRIVATE_KEY: ${{ secrets.KEY }}
+        ARGS: "-rlgoDzvc -i"
+        SOURCE: "bin/gak-server"
+        REMOTE_HOST: ${{ secrets.HOST }}
+        REMOTE_USER: ${{ secrets.USERNAME }}
+        TARGET: /tmp/gak-server
+        SCRIPT_BEFORE: |
           whoami
-          ls -al 
+          ls -al
+        SCRIPT_AFTER: |
+          whoami
+          ls -al
+          echo $RSYNC_STDOUT
           sh /root/gak-deploy.sh
-          
