@@ -31,10 +31,10 @@ jobs:
       with:
         SSH_PRIVATE_KEY: ${{ secrets.KEY }}
         ARGS: "-rlgoDzvc -i"
-        SOURCE: "bin/gak-server"
+        SOURCE: "bin/gak_server"
         REMOTE_HOST: ${{ secrets.HOST }}
         REMOTE_USER: ${{ secrets.USERNAME }}
-        TARGET: /tmp/gak-server
+        TARGET: /tmp/gak_server
         SCRIPT_BEFORE: |
           whoami
           ls -al
