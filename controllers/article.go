@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"fmt"
 	"go-gin/models"
 	"net/http"
 	"strconv"
@@ -15,15 +17,16 @@ type ArticleController struct {
 	BaseController
 }
 
-// GetArticles 获取文章列表
-// @Summary 获取所有文章列表，包括评论和星级信息
-// @Description 获取所有文章列表，包括评论和星级信息
+// GetArticles godoc
+// @Summary 获取文章列表
+// @Description 获取文章列表，支持分页查询
 // @Tags Articles
-// @Accept json
-// @Produce json
-// @Param page query int false "页码"
-// @Param page_size query int false "每页数量"
-// @Success 200 {array} models.Article
+// @Accept  json
+// @Produce  json
+// @Param page query int false "页码 (默认为1)"
+// @Param page_size query int false "每页显示数量 (默认为10)"
+// @Success 200 {object} []models.Article
+// @Failure 500 {object} ErrorResponse
 // @Router /articles [get]
 func (ac *ArticleController) GetArticles(c *gin.Context) {
 	var (
@@ -35,49 +38,46 @@ func (ac *ArticleController) GetArticles(c *gin.Context) {
 	page, _ = strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ = strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	// 使用预加载获取文章及其相关的评论和星级
-	query := ac.DB.Preload("Comments").Preload("Stars").Preload("Stars.User")
+	query := ac.DB
+
+	//query.Preload("Stars.User") //列出点赞的用户属性
 	// 计算总文章数
 	query.Model(&models.Article{}).Count(&totalItems)
 	// 分页查询文章
-	query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&articles)
+	query.Order("sort ASC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&articles)
 	// 构造响应结构
 	response := ac.NewListResponse(page, pageSize, totalItems, articles)
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, OK("Success", response))
 }
 
-// GetArticle 获取单篇文章详情
-// @Summary 获取单篇文章详情
-// @Description 获取单篇文章详情
+// GetArticle godoc
+// @Summary 获取文章详情 type=1表示文章，type=2表示视频。视频在列表点击直接播放
+// @Description 根据文章ID获取文章详情
 // @Tags Articles
-// @Accept json
-// @Produce json
-// @Param id path int true "文章ID"
+// @Accept  json
+// @Produce  json
+// @Param id query int true "文章ID"
 // @Success 200 {object} models.Article
-// @Failure 400 {object} ErrorResponse
-// @Router /article/{id} [get]
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /article [get]
 func (ac *ArticleController) GetArticle(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
+	fmt.Println("Fetching article with ID:", id)
 
 	// 查询文章
 	var article models.Article
-	if err := ac.DB.First(&article, id).Error; err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Message: "Article not found"})
+	if err := ac.DB.Preload("Stars").Preload("Comments").First(&article, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Message: "Article not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Message: "Internal server error"})
 		return
 	}
-
-	c.JSON(http.StatusOK, article)
+	c.JSON(http.StatusOK, OK("Success", article))
 }
 
-// CreateArticle 创建文章
-// @Summary 创建文章
-// @Description 创建文章
-// @Tags Articles
-// @Accept json
-// @Produce json
-// @Param input body models.CreateArticleInput true "文章信息"
-// @Success 200 {object} models.Article
-// @Failure 400 {object} ErrorResponse
-// @Router /article [post]
 func (ac *ArticleController) CreateArticle(c *gin.Context) {
 	var input models.CreateArticleInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -100,17 +100,6 @@ func (ac *ArticleController) CreateArticle(c *gin.Context) {
 	c.JSON(http.StatusOK, article)
 }
 
-// UpdateArticle 更新文章
-// @Summary 更新文章
-// @Description 更新文章
-// @Tags Articles
-// @Accept json
-// @Produce json
-// @Param id path int true "文章ID"
-// @Param input body models.UpdateArticleInput true "文章信息"
-// @Success 200 {object} models.Article
-// @Failure 400 {object} ErrorResponse
-// @Router /article/{id} [put]
 func (ac *ArticleController) UpdateArticle(c *gin.Context) {
 	id := c.Param("id")
 
@@ -140,16 +129,6 @@ func (ac *ArticleController) UpdateArticle(c *gin.Context) {
 	c.JSON(http.StatusOK, article)
 }
 
-// DeleteArticle 删除文章
-// @Summary 删除文章
-// @Description 删除文章
-// @Tags Articles
-// @Accept json
-// @Produce json
-// @Param id path int true "文章ID"
-// @Success 200 {string} string "删除成功"
-// @Failure 400 {object} ErrorResponse
-// @Router /article/{id} [delete]
 func (ac *ArticleController) DeleteArticle(c *gin.Context) {
 	id := c.Param("id")
 

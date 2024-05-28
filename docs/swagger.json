@@ -4,9 +4,9 @@
         "contact": {}
     },
     "paths": {
-        "/articles": {
+        "/article": {
             "get": {
-                "description": "获取所有文章列表，包括评论和星级信息",
+                "description": "根据文章ID获取文章详情",
                 "consumes": [
                     "application/json"
                 ],
@@ -16,17 +16,61 @@
                 "tags": [
                     "Articles"
                 ],
-                "summary": "获取所有文章列表，包括评论和星级信息",
+                "summary": "获取文章详情 type=1表示文章，type=2表示视频。视频在列表点击直接播放",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "页码",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Article"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/articles": {
+            "get": {
+                "description": "获取文章列表，支持分页查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "获取文章列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码 (默认为1)",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "每页数量",
+                        "description": "每页显示数量 (默认为10)",
                         "name": "page_size",
                         "in": "query"
                     }
@@ -40,160 +84,9 @@
                                 "$ref": "#/definitions/models.Article"
                             }
                         }
-                    }
-                }
-            },
-            "post": {
-                "description": "创建文章",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Articles"
-                ],
-                "summary": "创建文章",
-                "parameters": [
-                    {
-                        "description": "文章信息",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CreateArticleInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Article"
-                        }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/articles/{id}": {
-            "get": {
-                "description": "获取单篇文章详情",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Articles"
-                ],
-                "summary": "获取单篇文章详情",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "文章ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Article"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "更新文章",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Articles"
-                ],
-                "summary": "更新文章",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "文章ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "文章信息",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UpdateArticleInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Article"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "删除文章",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Articles"
-                ],
-                "summary": "删除文章",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "文章ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "删除成功",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/controllers.ErrorResponse"
                         }
@@ -229,6 +122,9 @@
         "controllers.ErrorResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer"
+                },
                 "message": {
                     "type": "string"
                 }
@@ -237,6 +133,9 @@
         "models.Article": {
             "type": "object",
             "properties": {
+                "commentCount": {
+                    "type": "integer"
+                },
                 "comments": {
                     "type": "array",
                     "items": {
@@ -246,19 +145,31 @@
                 "content": {
                     "type": "string"
                 },
-                "coverImageURL": {
+                "cover": {
                     "type": "string"
                 },
                 "createdAt": {
                     "type": "string"
                 },
-                "deletedOn": {
-                    "type": "integer"
-                },
-                "description": {
+                "desc": {
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "mark": {
+                    "type": "string"
+                },
+                "readCount": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "starCount": {
                     "type": "integer"
                 },
                 "stars": {
@@ -268,12 +179,18 @@
                     }
                 },
                 "status": {
-                    "type": "integer"
+                    "type": "boolean"
                 },
                 "title": {
                     "type": "string"
                 },
+                "type": {
+                    "type": "integer"
+                },
                 "updatedAt": {
+                    "type": "string"
+                },
+                "video": {
                     "type": "string"
                 }
             }
@@ -298,22 +215,33 @@
                 },
                 "updatedAt": {
                     "type": "string"
+                },
+                "user": {
+                    "description": "使用ResponseUser类型",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ResponseUser"
+                        }
+                    ]
+                },
+                "userID": {
+                    "type": "integer"
                 }
             }
         },
-        "models.CreateArticleInput": {
+        "models.ResponseUser": {
             "type": "object",
             "properties": {
-                "content": {
+                "avatar": {
                     "type": "string"
                 },
-                "cover_image_url": {
+                "id": {
+                    "type": "integer"
+                },
+                "phone": {
                     "type": "string"
                 },
-                "description": {
-                    "type": "string"
-                },
-                "title": {
+                "username": {
                     "type": "string"
                 }
             }
@@ -337,7 +265,7 @@
                     "description": "定义与 User 模型的关联",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.ResponseUser"
                         }
                     ]
                 },
@@ -346,64 +274,6 @@
                 },
                 "username": {
                     "description": "不映射到数据库，用于存储用户名",
-                    "type": "string"
-                }
-            }
-        },
-        "models.UpdateArticleInput": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "cover_image_url": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.User": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "lastLoginIP": {
-                    "type": "string"
-                },
-                "lastLoginTime": {
-                    "type": "string"
-                },
-                "loginTimes": {
-                    "type": "integer"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "realname": {
-                    "type": "string"
-                },
-                "remark": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "integer"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "username": {
                     "type": "string"
                 }
             }

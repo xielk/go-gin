@@ -4,11 +4,18 @@ server:
   port: 8081
   debug: true
 database:
-  host: 127.0.0.1
+  host: 47.100.124.57
   port: 3306
-  dbname: ginsk 
-  username: ginsk
-  password: ginsk123
+  dbname: gaet 
+  username: gaet
+  password: IifC5KF0
 jwt:
   key: 123123
+
+redis:
+  host: "127.0.0.1:6379"
+  password: ""
+  max_idle: 30
+  max_active: 30
+  idle_timeout: 200
 
