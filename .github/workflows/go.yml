@@ -31,7 +31,7 @@ jobs:
       env:
         SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
 
-    - name: ssh key passphrase
+    - name: executing remote ssh commands using password
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.HOST }}
@@ -43,5 +43,5 @@ jobs:
           cd /tmp
           ls -al
           sh /home/upup/gak-deploy.sh
-          #rm /tmp/gak_server
+          rm /tmp/gak_server
 
