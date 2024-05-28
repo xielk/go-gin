@@ -52,6 +52,6 @@ jobs:
           whoami
           cd /tmp
           ls -al
-          sh /home/upup/gak/gak-deploy.sh
+          sh /home/upup/gak-deploy.sh
           rm /tmp/gak_server
 
